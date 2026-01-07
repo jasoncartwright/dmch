@@ -74,6 +74,9 @@ def main():
     
     logging.info(f"Found {len(articles_dict)} unique articles")
     
+    # Track image preservation statistics
+    total_image_links_preserved = 0
+    
     # Process each article
     for i, (article_id, links) in enumerate(articles_dict.items()):
         headline_comment_url = dm_comment_url % article_id
@@ -95,22 +98,35 @@ def main():
                     comment_data["payload"].get("page") and 
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
-                    # Replace text for links to this article, but skip image links
+                    # Replace text for links to this article, but skip image links to preserve them
                     links_updated = 0
+                    links_with_images = 0
                     for link in links:
                         # Skip links that contain images to preserve them
                         if link.find('img') is None:
                             link.clear()
                             link.append(NavigableString(comment))
                             links_updated += 1
+                        else:
+                            links_with_images += 1
                         # Ensure full URL for all links
                         if not link["href"].startswith("http"):
                             link["href"] = f"https://www.dailymail.co.uk{link['href']}"
-                    logging.info(f"Processed article {i+1}/{len(articles_dict)}: {article_id} ({links_updated}/{len(links)} links updated)")
+                    
+                    # Update total count
+                    total_image_links_preserved += links_with_images
+                    
+                    log_msg = f"Processed article {i+1}/{len(articles_dict)}: {article_id} - {links_updated}/{len(links)} links updated"
+                    if links_with_images > 0:
+                        log_msg += f" ({links_with_images} image links preserved)"
+                    logging.info(log_msg)
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 logging.debug(f"No comment found for article {article_id}: {e}")
         else:
             logging.debug(f"Failed to fetch comment for article {article_id}")
+    
+    # Log image preservation statistics
+    logging.info(f"Image preservation: {total_image_links_preserved} article links with images preserved")
     
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)
