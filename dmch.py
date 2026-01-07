@@ -74,6 +74,9 @@ def main():
     
     logging.info(f"Found {len(articles_dict)} unique articles")
     
+    # Track image preservation statistics
+    total_image_links_preserved = 0
+    
     # Process each article
     for i, (article_id, links) in enumerate(articles_dict.items()):
         headline_comment_url = dm_comment_url % article_id
@@ -110,6 +113,9 @@ def main():
                         if not link["href"].startswith("http"):
                             link["href"] = f"https://www.dailymail.co.uk{link['href']}"
                     
+                    # Update total count
+                    total_image_links_preserved += links_with_images
+                    
                     log_msg = f"Processed article {i+1}/{len(articles_dict)}: {article_id} - {links_updated}/{len(links)} links updated"
                     if links_with_images > 0:
                         log_msg += f" ({links_with_images} image links preserved)"
@@ -119,9 +125,8 @@ def main():
         else:
             logging.debug(f"Failed to fetch comment for article {article_id}")
     
-    # Log image preservation statistics (before converting to string)
-    final_img_links = [l for l in dm_hp_content_soup.find_all("a", href=article_href_pattern) if l.find('img') is not None]
-    logging.info(f"Image preservation: {len(final_img_links)} article links with images preserved")
+    # Log image preservation statistics
+    logging.info(f"Image preservation: {total_image_links_preserved} article links with images preserved")
     
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)

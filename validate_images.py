@@ -10,7 +10,9 @@ from urllib.error import URLError, HTTPError
 from bs4 import BeautifulSoup
 import re
 
+# Constants
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0'
+MAX_MISSING_IDS_TO_DISPLAY = 10  # Maximum number of missing article IDs to display
 
 def main():
     """Validate that images are preserved in the processed HTML"""
@@ -84,7 +86,7 @@ def main():
     missing_ids = original_ids - processed_ids
     if missing_ids:
         print(f"\n   ✗ WARNING: {len(missing_ids)} articles lost their images!")
-        print(f"   Missing article IDs: {list(missing_ids)[:10]}")
+        print(f"   Missing article IDs: {list(missing_ids)[:MAX_MISSING_IDS_TO_DISPLAY]}")
         return 1
     else:
         print(f"   ✓ All articles with images preserved!")
