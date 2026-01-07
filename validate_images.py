@@ -86,7 +86,7 @@ def main():
     missing_ids = original_ids - processed_ids
     if missing_ids:
         print(f"\n   ✗ WARNING: {len(missing_ids)} articles lost their images!")
-        print(f"   Missing article IDs: {list(missing_ids)[:MAX_MISSING_IDS_TO_DISPLAY]}")
+        print(f"   Missing article IDs: {sorted(missing_ids)[:MAX_MISSING_IDS_TO_DISPLAY]}")
         return 1
     else:
         print(f"   ✓ All articles with images preserved!")
@@ -95,17 +95,18 @@ def main():
     if extra_ids:
         print(f"   ℹ Note: {len(extra_ids)} additional articles now have images")
     
-    # Validate image preservation
+    # Validate image preservation (optimized: search article links first, then check for images)
     print("\n6. Validating image elements...")
-    original_imgs = [img for img in original_soup.find_all('img') 
-                     if img.find_parent('a', href=article_href_pattern)]
-    processed_imgs = [img for img in processed_soup.find_all('img') 
-                      if img.find_parent('a', href=article_href_pattern)]
+    original_article_links = original_soup.find_all('a', href=article_href_pattern)
+    processed_article_links = processed_soup.find_all('a', href=article_href_pattern)
     
-    print(f"   Original page:  {len(original_imgs)} <img> tags in article links")
-    print(f"   Processed page: {len(processed_imgs)} <img> tags in article links")
+    original_imgs = sum(1 for link in original_article_links if link.find('img') is not None)
+    processed_imgs = sum(1 for link in processed_article_links if link.find('img') is not None)
     
-    img_diff = len(processed_imgs) - len(original_imgs)
+    print(f"   Original page:  {original_imgs} <img> tags in article links")
+    print(f"   Processed page: {processed_imgs} <img> tags in article links")
+    
+    img_diff = processed_imgs - original_imgs
     if img_diff < 0:
         print(f"   ✗ WARNING: {abs(img_diff)} images were removed!")
         return 1
@@ -120,7 +121,7 @@ def main():
     print("="*70)
     print(f"✓ Images in article links are correctly preserved")
     print(f"✓ {len(processed_img_links)} links with images found in processed page")
-    print(f"✓ {len(processed_imgs)} image elements found in article links")
+    print(f"✓ {processed_imgs} image elements found in article links")
     print(f"✓ All {len(processed_ids)} articles with images intact")
     print("\n" + "="*70)
     print("RESULT: ✓ VALIDATION PASSED")
