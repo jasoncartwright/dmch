@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Daily Mail Comment Headlines (dmch)
+Fetches the Daily Mail homepage and replaces headlines with top comments.
+"""
+
+import logging
+import re
+import json
+import sys
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
+from bs4 import BeautifulSoup
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+def fetch_url(url, headers=None, timeout=30):
+    """Fetch a URL and return the content."""
+    if headers is None:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0'
+        }
+    
+    try:
+        req = Request(url, headers=headers)
+        with urlopen(req, timeout=timeout) as response:
+            return response.read(), response.status
+    except (URLError, HTTPError) as e:
+        logging.error(f"Error fetching {url}: {e}")
+        return None, None
+
+
+def main():
+    """Main function to crawl Daily Mail and generate index.html"""
+    
+    dm_hp_url = "http://www.dailymail.co.uk/home/index.html"
+    dm_comment_url = "https://secured.dailymail.co.uk/reader-comments/p/asset/readcomments/%s?max=1&sort=voteRating&order=desc&rcCache=shout"
+    article_id_regex = r"article-(\d+)"
+    
+    # Fetch the Daily Mail homepage
+    logging.info(f"Fetching Daily Mail homepage: {dm_hp_url}")
+    dm_hp_content, status_code = fetch_url(dm_hp_url)
+    
+    if status_code != 200 or dm_hp_content is None:
+        logging.error(f"Failed to fetch homepage. Status: {status_code}")
+        sys.exit(1)
+    
+    logging.info(f"Got DM homepage {len(dm_hp_content)} bytes")
+    
+    # Parse the homepage
+    dm_hp_content_soup = BeautifulSoup(dm_hp_content, 'html.parser')
+    headlines = dm_hp_content_soup.find_all("a", {"itemprop": "url"})
+    logging.info(f"Found {len(headlines)} headlines")
+    
+    # Process each headline
+    article_re = re.compile(article_id_regex)
+    for i, headline in enumerate(headlines):
+        if "href" not in headline.attrs:
+            continue
+            
+        headline_url = headline["href"]
+        
+        # Extract article ID
+        matches = article_re.findall(headline_url)
+        if not matches:
+            continue
+            
+        headline_id = matches[0]
+        headline_comment_url = dm_comment_url % headline_id
+        
+        # Fetch top comment
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+        
+        comment_content, comment_status = fetch_url(headline_comment_url, headers=headers)
+        
+        if comment_status == 200 and comment_content:
+            try:
+                comment_data = json.loads(comment_content)
+                comment = comment_data["payload"]["page"][0]["message"]
+                # Replace headline text with comment
+                headline.string = comment
+                # Ensure full URL
+                if not headline["href"].startswith("http"):
+                    headline["href"] = f"http://www.dailymail.co.uk{headline['href']}"
+                logging.info(f"Processed headline {i+1}/{len(headlines)}: {headline_id}")
+            except (KeyError, IndexError, json.JSONDecodeError) as e:
+                logging.debug(f"No comment found for article {headline_id}: {e}")
+        else:
+            logging.debug(f"Failed to fetch comment for article {headline_id}")
+    
+    # Convert back to string and fix URLs
+    hp_str = str(dm_hp_content_soup)
+    hp_str = hp_str.replace("http://scripts.dailymail.co.uk", "https://scripts.dailymail.co.uk")
+    hp_str = hp_str.replace("http://i.dailymail.co.uk", "https://i.dailymail.co.uk")
+    
+    # Write to index.html
+    output_file = "index.html"
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(hp_str)
+    
+    logging.info(f"Successfully wrote output to {output_file}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
