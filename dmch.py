@@ -55,24 +55,30 @@ def main():
     
     # Parse the homepage
     dm_hp_content_soup = BeautifulSoup(dm_hp_content, 'html.parser')
-    headlines = dm_hp_content_soup.find_all("a", {"itemprop": "url"})
-    logging.info(f"Found {len(headlines)} headlines")
     
-    # Process each headline
+    # Find all article links by href pattern, not just those with itemprop="url"
     article_re = re.compile(article_id_regex)
-    for i, headline in enumerate(headlines):
-        if "href" not in headline.attrs:
+    article_href_pattern = re.compile(r'/[^/]+/article-\d+/')
+    all_links = dm_hp_content_soup.find_all("a", href=article_href_pattern)
+    
+    # Group links by article ID
+    articles_dict = {}
+    for link in all_links:
+        if "href" not in link.attrs:
             continue
-            
-        headline_url = headline["href"]
-        
-        # Extract article ID
-        matches = article_re.findall(headline_url)
+        matches = article_re.findall(link["href"])
         if not matches:
             continue
-            
-        headline_id = matches[0]
-        headline_comment_url = dm_comment_url % headline_id
+        article_id = matches[0]
+        if article_id not in articles_dict:
+            articles_dict[article_id] = []
+        articles_dict[article_id].append(link)
+    
+    logging.info(f"Found {len(articles_dict)} unique articles")
+    
+    # Process each article
+    for i, (article_id, links) in enumerate(articles_dict.items()):
+        headline_comment_url = dm_comment_url % article_id
         
         # Fetch top comment
         headers = {
@@ -91,18 +97,18 @@ def main():
                     comment_data["payload"].get("page") and 
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
-                    # Replace headline text with comment
-                    # Clear existing content and set new text
-                    headline.clear()
-                    headline.append(NavigableString(comment))
-                    # Ensure full URL
-                    if not headline["href"].startswith("http"):
-                        headline["href"] = f"https://www.dailymail.co.uk{headline['href']}"
-                    logging.info(f"Processed headline {i+1}/{len(headlines)}: {headline_id}")
+                    # Replace text for ALL links to this article
+                    for link in links:
+                        link.clear()
+                        link.append(NavigableString(comment))
+                        # Ensure full URL
+                        if not link["href"].startswith("http"):
+                            link["href"] = f"https://www.dailymail.co.uk{link['href']}"
+                    logging.info(f"Processed article {i+1}/{len(articles_dict)}: {article_id} ({len(links)} links)")
             except (KeyError, IndexError, json.JSONDecodeError) as e:
-                logging.debug(f"No comment found for article {headline_id}: {e}")
+                logging.debug(f"No comment found for article {article_id}: {e}")
         else:
-            logging.debug(f"Failed to fetch comment for article {headline_id}")
+            logging.debug(f"Failed to fetch comment for article {article_id}")
     
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)
