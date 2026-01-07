@@ -17,6 +17,11 @@ MAX_MISSING_IDS_TO_DISPLAY = 10  # Maximum number of missing article IDs to disp
 def main():
     """Validate that images are preserved in the processed HTML"""
     
+    # Validate constants
+    if MAX_MISSING_IDS_TO_DISPLAY <= 0:
+        print(f"ERROR: MAX_MISSING_IDS_TO_DISPLAY must be > 0, got {MAX_MISSING_IDS_TO_DISPLAY}")
+        return 1
+    
     print("="*70)
     print("IMAGE PRESERVATION VALIDATION")
     print("="*70)
@@ -114,9 +119,8 @@ def main():
     print("VALIDATION SUMMARY")
     print("="*70)
     print(f"✓ Images in article links are correctly preserved")
-    print(f"✓ {len(processed_img_links)} links with images found in processed page")
-    print(f"✓ {len(processed_img_links)} image elements found in article links")
-    print(f"✓ All {len(processed_ids)} articles with images intact")
+    print(f"✓ {len(processed_img_links)} article links with images in processed page")
+    print(f"✓ All {len(processed_ids)} unique articles with images intact")
     print("\n" + "="*70)
     print("RESULT: ✓ VALIDATION PASSED")
     print("="*70)
