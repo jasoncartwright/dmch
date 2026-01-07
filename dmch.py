@@ -95,14 +95,18 @@ def main():
                     comment_data["payload"].get("page") and 
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
-                    # Replace text for ALL links to this article
+                    # Replace text for links to this article, but skip image links
+                    links_updated = 0
                     for link in links:
-                        link.clear()
-                        link.append(NavigableString(comment))
-                        # Ensure full URL
+                        # Skip links that contain images to preserve them
+                        if link.find('img') is None:
+                            link.clear()
+                            link.append(NavigableString(comment))
+                            links_updated += 1
+                        # Ensure full URL for all links
                         if not link["href"].startswith("http"):
                             link["href"] = f"https://www.dailymail.co.uk{link['href']}"
-                    logging.info(f"Processed article {i+1}/{len(articles_dict)}: {article_id} ({len(links)} links)")
+                    logging.info(f"Processed article {i+1}/{len(articles_dict)}: {article_id} ({links_updated}/{len(links)} links updated)")
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 logging.debug(f"No comment found for article {article_id}: {e}")
         else:
