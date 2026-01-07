@@ -12,7 +12,7 @@ import re
 
 # Constants
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0'
-MAX_MISSING_IDS_TO_DISPLAY = 10  # Maximum number of missing article IDs to display
+MAX_MISSING_IDS_TO_DISPLAY = 10  # Maximum number of missing article IDs to display (must be > 0)
 
 def main():
     """Validate that images are preserved in the processed HTML"""
@@ -95,18 +95,12 @@ def main():
     if extra_ids:
         print(f"   ℹ Note: {len(extra_ids)} additional articles now have images")
     
-    # Validate image preservation (optimized: search article links first, then check for images)
+    # Validate image preservation (reuse already calculated counts)
     print("\n6. Validating image elements...")
-    original_article_links = original_soup.find_all('a', href=article_href_pattern)
-    processed_article_links = processed_soup.find_all('a', href=article_href_pattern)
+    print(f"   Original page:  {len(original_img_links)} <img> tags in article links")
+    print(f"   Processed page: {len(processed_img_links)} <img> tags in article links")
     
-    original_imgs = sum(1 for link in original_article_links if link.find('img') is not None)
-    processed_imgs = sum(1 for link in processed_article_links if link.find('img') is not None)
-    
-    print(f"   Original page:  {original_imgs} <img> tags in article links")
-    print(f"   Processed page: {processed_imgs} <img> tags in article links")
-    
-    img_diff = processed_imgs - original_imgs
+    img_diff = len(processed_img_links) - len(original_img_links)
     if img_diff < 0:
         print(f"   ✗ WARNING: {abs(img_diff)} images were removed!")
         return 1
@@ -121,7 +115,7 @@ def main():
     print("="*70)
     print(f"✓ Images in article links are correctly preserved")
     print(f"✓ {len(processed_img_links)} links with images found in processed page")
-    print(f"✓ {processed_imgs} image elements found in article links")
+    print(f"✓ {len(processed_img_links)} image elements found in article links")
     print(f"✓ All {len(processed_ids)} articles with images intact")
     print("\n" + "="*70)
     print("RESULT: ✓ VALIDATION PASSED")
