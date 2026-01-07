@@ -8,7 +8,13 @@ A Python script that fetches the Daily Mail homepage and replaces article headli
 2. Extracts all article headlines
 3. For each article, fetches the top-rated comment
 4. Replaces the headline text with the top comment
-5. Outputs the modified page as `index.html`
+5. **Preserves all images** - Links containing images are kept intact to maintain the visual layout
+6. Outputs the modified page as `index.html`
+
+## Important Notes
+
+- **Image Preservation**: The script automatically preserves all article links that contain images (e.g., thumbnail images, article photos). Only text-only headline links are replaced with comments. This ensures the visual layout of the page remains intact.
+- **Validation**: Run `python validate_images.py` to verify that images are being preserved correctly in the generated output.
 
 ## Usage
 

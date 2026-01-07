@@ -95,18 +95,25 @@ def main():
                     comment_data["payload"].get("page") and 
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
-                    # Replace text for links to this article, but skip image links
+                    # Replace text for links to this article, but skip image links to preserve them
                     links_updated = 0
+                    links_with_images = 0
                     for link in links:
                         # Skip links that contain images to preserve them
                         if link.find('img') is None:
                             link.clear()
                             link.append(NavigableString(comment))
                             links_updated += 1
+                        else:
+                            links_with_images += 1
                         # Ensure full URL for all links
                         if not link["href"].startswith("http"):
                             link["href"] = f"https://www.dailymail.co.uk{link['href']}"
-                    logging.info(f"Processed article {i+1}/{len(articles_dict)}: {article_id} ({links_updated}/{len(links)} links updated)")
+                    
+                    log_msg = f"Processed article {i+1}/{len(articles_dict)}: {article_id} - {links_updated}/{len(links)} links updated"
+                    if links_with_images > 0:
+                        log_msg += f" ({links_with_images} image links preserved)"
+                    logging.info(log_msg)
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 logging.debug(f"No comment found for article {article_id}: {e}")
         else:
@@ -116,6 +123,11 @@ def main():
     hp_str = str(dm_hp_content_soup)
     hp_str = hp_str.replace("http://scripts.dailymail.co.uk", "https://scripts.dailymail.co.uk")
     hp_str = hp_str.replace("http://i.dailymail.co.uk", "https://i.dailymail.co.uk")
+    
+    # Log image preservation statistics
+    final_soup = BeautifulSoup(hp_str, 'html.parser')
+    final_img_links = [l for l in final_soup.find_all("a", href=article_href_pattern) if l.find('img') is not None]
+    logging.info(f"Image preservation: {len(final_img_links)} article links with images preserved")
     
     # Write to index.html
     output_file = "index.html"
