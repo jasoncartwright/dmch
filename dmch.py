@@ -42,6 +42,7 @@ def main():
     dm_hp_url = "https://www.dailymail.co.uk/home/index.html"
     dm_comment_url = "https://secured.dailymail.co.uk/reader-comments/p/asset/readcomments/%s?max=1&sort=voteRating&order=desc&rcCache=shout"
     article_id_regex = r"article-(\d+)"
+    article_href_pattern = re.compile(r'/[^/]+/article-\d+/')
     
     # Fetch the Daily Mail homepage
     logging.info(f"Fetching Daily Mail homepage: {dm_hp_url}")
@@ -58,14 +59,11 @@ def main():
     
     # Find all article links by href pattern, not just those with itemprop="url"
     article_re = re.compile(article_id_regex)
-    article_href_pattern = re.compile(r'/[^/]+/article-\d+/')
     all_links = dm_hp_content_soup.find_all("a", href=article_href_pattern)
     
     # Group links by article ID
     articles_dict = {}
     for link in all_links:
-        if "href" not in link.attrs:
-            continue
         matches = article_re.findall(link["href"])
         if not matches:
             continue
