@@ -6,6 +6,7 @@ Validation script to verify that images in links are preserved during processing
 
 import sys
 from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 from bs4 import BeautifulSoup
 import re
 
@@ -27,7 +28,7 @@ def main():
         with urlopen(req, timeout=30) as response:
             original_content = response.read()
         print("   ✓ Original page fetched successfully")
-    except Exception as e:
+    except (URLError, HTTPError) as e:
         print(f"   ✗ Failed to fetch original page: {e}")
         return 1
     
@@ -37,7 +38,7 @@ def main():
         with open('index.html', 'r', encoding='utf-8') as f:
             processed_content = f.read()
         print("   ✓ Processed page loaded successfully")
-    except Exception as e:
+    except (FileNotFoundError, IOError) as e:
         print(f"   ✗ Failed to load processed page: {e}")
         return 1
     

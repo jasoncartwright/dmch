@@ -119,15 +119,14 @@ def main():
         else:
             logging.debug(f"Failed to fetch comment for article {article_id}")
     
+    # Log image preservation statistics (before converting to string)
+    final_img_links = [l for l in dm_hp_content_soup.find_all("a", href=article_href_pattern) if l.find('img') is not None]
+    logging.info(f"Image preservation: {len(final_img_links)} article links with images preserved")
+    
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)
     hp_str = hp_str.replace("http://scripts.dailymail.co.uk", "https://scripts.dailymail.co.uk")
     hp_str = hp_str.replace("http://i.dailymail.co.uk", "https://i.dailymail.co.uk")
-    
-    # Log image preservation statistics
-    final_soup = BeautifulSoup(hp_str, 'html.parser')
-    final_img_links = [l for l in final_soup.find_all("a", href=article_href_pattern) if l.find('img') is not None]
-    logging.info(f"Image preservation: {len(final_img_links)} article links with images preserved")
     
     # Write to index.html
     output_file = "index.html"
