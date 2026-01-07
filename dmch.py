@@ -11,7 +11,7 @@ import json
 import sys
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 # Configure logging
 logging.basicConfig(
@@ -19,12 +19,13 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+# Constants
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0'
+
 def fetch_url(url, headers=None, timeout=30):
     """Fetch a URL and return the content."""
     if headers is None:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0'
-        }
+        headers = {'User-Agent': USER_AGENT}
     
     try:
         req = Request(url, headers=headers)
@@ -38,7 +39,7 @@ def fetch_url(url, headers=None, timeout=30):
 def main():
     """Main function to crawl Daily Mail and generate index.html"""
     
-    dm_hp_url = "http://www.dailymail.co.uk/home/index.html"
+    dm_hp_url = "https://www.dailymail.co.uk/home/index.html"
     dm_comment_url = "https://secured.dailymail.co.uk/reader-comments/p/asset/readcomments/%s?max=1&sort=voteRating&order=desc&rcCache=shout"
     article_id_regex = r"article-(\d+)"
     
@@ -75,7 +76,7 @@ def main():
         
         # Fetch top comment
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:61.0) Gecko/20100101 Firefox/61.0',
+            'User-Agent': USER_AGENT,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'X-Requested-With': 'XMLHttpRequest'
         }
@@ -85,13 +86,19 @@ def main():
         if comment_status == 200 and comment_content:
             try:
                 comment_data = json.loads(comment_content)
-                comment = comment_data["payload"]["page"][0]["message"]
-                # Replace headline text with comment
-                headline.string = comment
-                # Ensure full URL
-                if not headline["href"].startswith("http"):
-                    headline["href"] = f"http://www.dailymail.co.uk{headline['href']}"
-                logging.info(f"Processed headline {i+1}/{len(headlines)}: {headline_id}")
+                # Safely access nested JSON structure
+                if (comment_data.get("payload") and 
+                    comment_data["payload"].get("page") and 
+                    len(comment_data["payload"]["page"]) > 0):
+                    comment = comment_data["payload"]["page"][0]["message"]
+                    # Replace headline text with comment
+                    # Clear existing content and set new text
+                    headline.clear()
+                    headline.append(NavigableString(comment))
+                    # Ensure full URL
+                    if not headline["href"].startswith("http"):
+                        headline["href"] = f"https://www.dailymail.co.uk{headline['href']}"
+                    logging.info(f"Processed headline {i+1}/{len(headlines)}: {headline_id}")
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 logging.debug(f"No comment found for article {headline_id}: {e}")
         else:
