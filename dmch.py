@@ -99,18 +99,16 @@ def main():
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
                     # Replace text for the first text-only link (headline), skip image links to preserve them
-                    links_updated = 0
+                    headline_updated = False
                     links_with_images = 0
-                    headline_replaced = False
                     for link in links:
                         # Skip links that contain images to preserve them
                         if link.find('img') is None:
                             # Only replace the first text-only link (the headline)
-                            if not headline_replaced:
+                            if not headline_updated:
                                 link.clear()
                                 link.append(NavigableString(comment))
-                                links_updated += 1
-                                headline_replaced = True
+                                headline_updated = True
                         else:
                             links_with_images += 1
                         # Ensure full URL for all links
@@ -120,7 +118,8 @@ def main():
                     # Update total count
                     total_image_links_preserved += links_with_images
                     
-                    log_msg = f"Processed article {i+1}/{len(articles_dict)}: {article_id} - {links_updated}/{len(links)} links updated"
+                    status = "headline updated" if headline_updated else "no text-only links"
+                    log_msg = f"Processed article {i+1}/{len(articles_dict)}: {article_id} - {status}"
                     if links_with_images > 0:
                         log_msg += f" ({links_with_images} image links preserved)"
                     logging.info(log_msg)
