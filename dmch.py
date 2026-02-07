@@ -144,7 +144,7 @@ def main():
     if head_tag:
         # Create a new style tag with CSS to hide ad-slot elements
         style_tag = dm_hp_content_soup.new_tag('style')
-        style_tag.string = 'ad-slot {display:none}'
+        style_tag.string = 'ad-slot { display: none !important; }'
         head_tag.append(style_tag)
         logging.info("Injected CSS to hide ad-slot elements")
     
