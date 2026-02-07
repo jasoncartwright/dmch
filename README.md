@@ -1,3 +1,5 @@
+Generated page: https://jasoncartwright.github.io/dmch/
+
 # Daily Mail Comment Headlines (dmch)
 
 A Python script that fetches the Daily Mail homepage and replaces article headlines with their top-rated comments, creating a humorous alternative view of the news.
