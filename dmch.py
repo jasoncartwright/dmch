@@ -139,6 +139,15 @@ def main():
     # Log image preservation statistics
     logging.info(f"Image preservation: {total_image_links_preserved} article links with images preserved")
     
+    # Inject CSS to hide ad-slot elements
+    head_tag = dm_hp_content_soup.find('head')
+    if head_tag:
+        # Create a new style tag with CSS to hide ad-slot elements
+        style_tag = dm_hp_content_soup.new_tag('style')
+        style_tag.string = 'ad-slot { display: none !important; }'
+        head_tag.append(style_tag)
+        logging.info("Injected CSS to hide ad-slot elements")
+    
     # Remove billboard-container elements
     billboard_containers = dm_hp_content_soup.find_all(class_="billboard-container")
     billboard_count = len(billboard_containers)
@@ -147,13 +156,11 @@ def main():
     if billboard_count > 0:
         logging.info(f"Removed {billboard_count} billboard-container elements")
     
-    # Remove ad-slot elements
+    # Count ad-slot elements (now hidden by CSS instead of removed)
     ad_slots = dm_hp_content_soup.find_all("ad-slot")
     ad_slot_count = len(ad_slots)
-    for element in ad_slots:
-        element.decompose()
     if ad_slot_count > 0:
-        logging.info(f"Removed {ad_slot_count} ad-slot elements")
+        logging.info(f"Found {ad_slot_count} ad-slot elements (hidden by CSS)")
     
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)
