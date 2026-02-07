@@ -98,15 +98,19 @@ def main():
                     comment_data["payload"].get("page") and 
                     len(comment_data["payload"]["page"]) > 0):
                     comment = comment_data["payload"]["page"][0]["message"]
-                    # Replace text for links to this article, but skip image links to preserve them
+                    # Replace text for the first text-only link (headline), skip image links to preserve them
                     links_updated = 0
                     links_with_images = 0
+                    headline_replaced = False
                     for link in links:
                         # Skip links that contain images to preserve them
                         if link.find('img') is None:
-                            link.clear()
-                            link.append(NavigableString(comment))
-                            links_updated += 1
+                            # Only replace the first text-only link (the headline)
+                            if not headline_replaced:
+                                link.clear()
+                                link.append(NavigableString(comment))
+                                links_updated += 1
+                                headline_replaced = True
                         else:
                             links_with_images += 1
                         # Ensure full URL for all links
