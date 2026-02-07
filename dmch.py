@@ -139,6 +139,22 @@ def main():
     # Log image preservation statistics
     logging.info(f"Image preservation: {total_image_links_preserved} article links with images preserved")
     
+    # Remove billboard-container elements
+    billboard_containers = dm_hp_content_soup.find_all(class_="billboard-container")
+    billboard_count = len(billboard_containers)
+    for element in billboard_containers:
+        element.decompose()
+    if billboard_count > 0:
+        logging.info(f"Removed {billboard_count} billboard-container elements")
+    
+    # Remove ad-slot elements
+    ad_slots = dm_hp_content_soup.find_all("ad-slot")
+    ad_slot_count = len(ad_slots)
+    for element in ad_slots:
+        element.decompose()
+    if ad_slot_count > 0:
+        logging.info(f"Removed {ad_slot_count} ad-slot elements")
+    
     # Convert back to string and fix URLs
     hp_str = str(dm_hp_content_soup)
     hp_str = hp_str.replace("http://scripts.dailymail.co.uk", "https://scripts.dailymail.co.uk")
