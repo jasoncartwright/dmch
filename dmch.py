@@ -102,7 +102,7 @@ def main():
                     headline_updated = False
                     links_with_images = 0
                     for link in links:
-                        # Skip links that contain images to preserve them
+                        # Check if link contains an image
                         if link.find('img') is None:
                             # Only replace the first text-only link (the headline)
                             if not headline_updated:
@@ -110,6 +110,14 @@ def main():
                                 link.append(NavigableString(comment))
                                 headline_updated = True
                         else:
+                            # Link has an image - check if it has a <strong> tag with headline text
+                            strong_tag = link.find('strong')
+                            if strong_tag:
+                                # Replace text in <strong> tag while preserving image
+                                # This handles cases like ul.link-bogr2 where images and headlines coexist
+                                strong_tag.clear()
+                                strong_tag.append(NavigableString(comment))
+                                headline_updated = True
                             links_with_images += 1
                         # Ensure full URL for all links
                         if not link["href"].startswith("http"):
